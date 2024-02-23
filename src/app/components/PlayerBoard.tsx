@@ -24,7 +24,18 @@ function PlayerBoard() {
   const [selectedShip, setSelectedShip] = useState<Ship | null>(null);
   const [ships, setShips] = useState<Ship[]>(SHIPS);
 
+  const startPollingForPlayers = () => {
+    // 1. generate a uuid for player
+    // 2. start messaging on the battleship-rtp-topic your uuid
+  }
+
+  const stopPollingForPlayers = () => {
+
+  }
+
   const handleReset = () => {
+
+    stopPollingForPlayers();
     setShips(SHIPS);
     setSelectedShip(null);
     setBoard(createBoard());
@@ -35,6 +46,13 @@ function PlayerBoard() {
       setSelectedShip(ship);
     }
   };
+
+  const areAllShipsPlaced = () => {
+      // get a count of all placed ships
+      const placedShips = ships.filter((_ship: Ship) => _ship.placed);
+
+      return placedShips.length === SHIPS.length;
+  }
 
   const resetShipPlacement = (shipId: number) => {
     const newBoard = createBoard();
@@ -130,6 +148,9 @@ function PlayerBoard() {
           </div>
         ))}
       </div>
+      {
+          areAllShipsPlaced() && <button onClick={startPollingForPlayers}>Ready to play</button>
+      }
     </div>
   );
 }
