@@ -2,12 +2,10 @@
 import PlayerBoard from "./components/PlayerBoard";
 import { ContentPairProvider, useWaku } from "@waku/react";
 
+
 export default function Home() {
-
   const { isLoading, error, node } = useWaku();
-
-  console.log({isLoading, error, node})
-
+  console.log({ isLoading, error, node })
   
   const roomId = Math.random();
   if (isLoading) {
@@ -15,7 +13,7 @@ export default function Home() {
   }
 
   return (
-    <ContentPairProvider contentTopic={"/my-app/2/chatroom-1/proto"}>
+      <ContentPairProvider contentTopic={"/my-app/2/chatroom-1/proto"}>
       <h2>Battleship Game</h2>
       <div className="container">  
         <div className="left-section">
