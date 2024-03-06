@@ -4,10 +4,10 @@ import React from "react";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import {Protocols} from '@waku/sdk'
-import { LightNodeProvider } from "@waku/react";
+import { ContentPairProvider, LightNodeProvider } from "@waku/react";
 
 const peers = [
-  "/ip4/49.206.132.241/tcp/8000/ws/p2p/16Uiu2HAm9sQfeoR3fs13m8DRZvUE5AVjLqw8sFgZPa3ehu8tyzS4",
+  "/dns4/node-01.do-ams3.waku.test.statusim.net/tcp/8000/wss/p2p/16Uiu2HAkykgaECHswi3YKJ5dMLbq2kPVCo89fcyTd38UcQD6ej5W",
 ];
 
 const inter = Inter({ subsets: ["latin"] });
@@ -22,9 +22,11 @@ export default function RootLayout({
       options={{bootstrapPeers: peers}}
       protocols={[Protocols.Store, Protocols.Filter, Protocols.LightPush]}
     >
+      <ContentPairProvider contentTopic={"/my-app/2/chatroom-1/proto"}>
     <html lang="en">
       <body className={inter.className}>{children}</body>
-      </html>
+        </html>
+      </ContentPairProvider>
       </LightNodeProvider>
   );
 }

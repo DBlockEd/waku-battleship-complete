@@ -1,20 +1,46 @@
 "use client"
+import { useEffect } from "react";
 import PlayerBoard from "./components/PlayerBoard";
-import { ContentPairProvider, useWaku } from "@waku/react";
+import { ContentPairProvider, useContentPair, useLightPush, useWaku } from "@waku/react";
+import { LightNode } from '@waku/sdk'
+import protobuf from 'protobufjs';
 
 
 export default function Home() {
-  const { isLoading, error, node } = useWaku();
-  console.log({ isLoading, error, node })
+  const { isLoading, error, node } = useWaku<LightNode>();
+  const { encoder, decoder } = useContentPair()
+  const { push } = useLightPush({ node, encoder });
+  
+  useEffect(() => {
+    console.log({ isLoading, error, node })
+  },[isLoading, error, node])
   
   const roomId = Math.random();
   if (isLoading) {
     return "loading waku..."
   }
 
+  async function pushMessage() {
+    if (!node || !push) return;
+    const timestamp = new Date();
+    const ChatMessage = new protobuf.Type("ChatMessage")
+      .add(new protobuf.Field("timestamp", 1, "uint64"))
+      .add(new protobuf.Field("message", 2, "string"));
+    const protoMessage = ChatMessage.create({
+        timestamp: timestamp,
+        message: "Hello World!"
+    });
+
+    // Serialise the message and push to the network
+    const payload = ChatMessage.encode(protoMessage).finish();
+    await push({ payload, timestamp })
+    console.log("push successful")
+    
+  }
+
   return (
-      <ContentPairProvider contentTopic={"/my-app/2/chatroom-1/proto"}>
-      <h2>Battleship Game</h2>
+    <>
+     <h2>Battleship Game</h2>
       <div className="container">  
         <div className="left-section">
           <div className="player-board">
@@ -23,11 +49,14 @@ export default function Home() {
           <div className="opponent-board marker-class">
             opponent board goes here
           </div>
+          <button onClick={pushMessage}>
+            Push Message
+          </button>
         </div>
         <div className="right-section marker-class">
           Right section
         </div>
       </div>
-    </ContentPairProvider>
+    </>
   );
 }
