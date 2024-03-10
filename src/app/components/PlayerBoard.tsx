@@ -8,94 +8,138 @@ import {
   useFilterMessages,
 } from '@waku/react';
 
-import protobuf from 'protobufjs';
 import { Message, Player } from "../types";
-import { removeDuplicatesByKey } from "../utils";
-import { BOARD_SIZE, createBoard, Ship } from "../utils/gameUtils";
+import { decodeMessage, findLatestMessage, removeDuplicatesByKey } from "../utils";
+import { BOARD_SIZE, ChatMessage, createBoard, MoveMessage, MoveReplyMessage, Ship, SHIPS } from "../utils/gameUtils";
 
-const SHIPS: Ship[] = [
-  { id: 1, size: 3, orientation: "horizontal", placed: false },
-  { id: 2, size: 3, orientation: "horizontal", placed: false },
-  { id: 3, size: 2, orientation: "horizontal", placed: false },
-  { id: 4, size: 2, orientation: "vertical", placed: false },
-  { id: 5, size: 2, orientation: "vertical", placed: false },
-];
-
-
-const ChatMessage = new protobuf.Type('ChatMessage')
-  .add(new protobuf.Field('timestamp', 1, 'uint64'))
-  .add(new protobuf.Field('sender', 2, 'string'))
-  .add(new protobuf.Field('message', 3, 'string'))
-  .add(new protobuf.Field('id', 4, 'string'));
-
-
-function PlayerBoard(props: {roomId: number, messages: Message[], setMessages: any, player: Player}) {
+function PlayerBoard(props: { 
+  filterMessages: any,
+  messages: Message[], 
+  setMessages: any, 
+  player: Player,
+  node: any,
+  isLoading: boolean,
+  error: any,
+  encoder: any,
+  decoder: any
+}) {
 
 
   // waku dependencies
-  const { node, isLoading, error } = useWaku();
+  const { node, isLoading, error } = props;
   
-  const { decoder, encoder } = useContentPair();
-
+  const { decoder, encoder } = props;
   
-  const { messages: filterMessages } = useFilterMessages({ node, decoder });
-  const {messages: storeMessages} = useStoreMessages({node, decoder});
+  const { filterMessages } = props;
+  
   // end waku dependencies
 
 
   useEffect(() => {
 
-    if (props.player === Player.p2 && !isLoading) {
+    if (!isLoading) {
       // send a message indicating that the second player has joined
       // first player created the room, so they can be assumed joined
 
       sendMessage(props.player, 'joined');
+      
     }
 
   }, [props.player, isLoading])
 
-  function decodeMessage(wakuMessage: any) {
-    if (!wakuMessage.payload) return;
+  const doesShipExistOn = (row: number, col: number, board: number[][]) => {
+    return Boolean(board[row][col]);
+  }
 
-    const { timestamp, sender, message, id } = ChatMessage.decode(wakuMessage.payload);
+  const respondToMove = async (move:string) => {
+    const rowIndex = parseInt(move.split(',')[0]);
+    const colIndex = parseInt(move.split(',')[1]);
 
-    if (!timestamp || !sender || !message) {
-      console.error({timestamp, sender, message, id}, 'missing props');
-      
-    };
+    await sendHitMessage(doesShipExistOn(rowIndex, colIndex, board), `${rowIndex},${colIndex}`);
 
-    const time = new Date();
-    time.setTime(Number(timestamp));
+    if (doesShipExistOn(rowIndex, colIndex, board)) {
+        console.log(" opponent hit a ship")
+        let newBoard = [...board];
+        newBoard[rowIndex][colIndex] = 'X';
+        setBoard(newBoard);
+        return;
+    }
 
-    return {
-      message,
-      timestamp: time,
-      sender,
-      timestampInt: wakuMessage.timestamp,
-      id
-    };
+    console.log("opponent missed")
+  
+
   }
 
   
-  useEffect(() => {
 
-    console.log({filterMessages, storeMessages})
+  const handleLatestMessage = (message: Message) => {
+    console.log('latest message: ', message);
+    // do nothing if the message is sent by self
+    if (message.sender === props.player) {
+      console.log('not responding to latest message');
+      return;
+    };
+
+    console.log('responding to latest message')
+    if (message.move) {
+      respondToMove(message.move);
+      return;
+    }
+    
+  }
+
+  useEffect(() => {
+    
     const filteredMessagesDecoded = filterMessages.map(decodeMessage);
 
     const updatedMessages = [...props.messages, ...filteredMessagesDecoded] as Message[];
     
     const filteredUpdatedMessages = removeDuplicatesByKey(updatedMessages, 'id');
-    console.log({filteredUpdatedMessages, updatedMessages});
     props.setMessages(filteredUpdatedMessages);
 
-  }, [filterMessages, storeMessages])
+    const latestMessage = findLatestMessage(filteredMessagesDecoded as Message[]);
+    console.log({latestMessage})
+    if (latestMessage) {
+      filteredMessagesDecoded && handleLatestMessage(latestMessage);
+    }
+    
+
+  }, [filterMessages])
 
   
 
   const { push } = useLightPush({ node, encoder });
 
+ const sendHitMessage = async (hit: boolean, move: string) => {
+   console.log('sending hit message: ', hit);
+  const protoMessage = MoveReplyMessage.create({
+      timestamp: Date.now(),
+      sender: props.player,
+      hit: hit? 1: 0,
+      move,
+      id: crypto.randomUUID()
+  })
+
+  const serialisedMessage = MoveReplyMessage.encode(protoMessage).finish();
+
+  const timestamp = new Date();
+
+  if (push) {
+    const res = await push({
+      payload: serialisedMessage,
+      timestamp
+    })
+
+    if (res?.errors?.length && res?.errors?.length > 0) {
+      alert('unable to connect to a stable node. please reload')
+
+    }
+  }
+ }
+
   async function sendMessage(sender: any, message: any) {
 
+    console.info('sending message: ', `${sender}: ${message}`);
     const protoMessage = ChatMessage.create({
       timestamp: Date.now(),
       sender,
@@ -112,8 +156,7 @@ function PlayerBoard(props: {roomId: number, messages: Message[], setMessages: a
         payload: serialisedMessage,
         timestamp: timestamp,
       });
-  
-      console.log('MESSAGE PUSHED', res);
+
       if (res?.errors?.length && res?.errors?.length > 0) {
         alert('unable to connect to a stable node. please reload')
 
@@ -247,7 +290,11 @@ function PlayerBoard(props: {roomId: number, messages: Message[], setMessages: a
                   if (cell === 1) resetShipPlacement(rowIndex);
                   else placeShipOnBoard(rowIndex, colIndex);
                 }}
-              ></div>
+              >
+                {
+                  cell === 'X' && 'X'
+                }
+              </div>
             ))}
           </div>
         ))}

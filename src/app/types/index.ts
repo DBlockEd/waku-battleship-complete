@@ -4,8 +4,11 @@ export enum Player {
   }
   
   export type Message = {
-    message: string;
+    timestamp: number;
+    message?: string;
     sender: Player;
     id: any;
+    move?: string;
+    hit?:number;
   }
   
