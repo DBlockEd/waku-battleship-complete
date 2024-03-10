@@ -1,15 +1,22 @@
 "use client"
 import { useEffect } from "react";
 import PlayerBoard from "./components/PlayerBoard";
-import { ContentPairProvider, useContentPair, useLightPush, useWaku } from "@waku/react";
+import { ContentPairProvider, useContentPair, useLightPush, useWaku, useFilterMessages, useStoreMessages } from "@waku/react";
 import { LightNode } from '@waku/sdk'
 import protobuf from 'protobufjs';
+// import { useStoreMessages } from "../../node_modules/@waku/react/dist/useStoreMessages";
+
 
 
 export default function Home() {
   const { isLoading, error, node } = useWaku<LightNode>();
   const { encoder, decoder } = useContentPair()
   const { push } = useLightPush({ node, encoder });
+
+  const {messages} = useStoreMessages({ node, decoder });
+
+
+  console.log({messages})
   
   useEffect(() => {
     console.log({ isLoading, error, node })
@@ -33,10 +40,12 @@ export default function Home() {
 
     // Serialise the message and push to the network
     const payload = ChatMessage.encode(protoMessage).finish();
-    await push({ payload, timestamp })
-    console.log("push successful")
+    // const res = await push({ payload, timestamp })
+    console.log("push successful", res);
     
   }
+
+  
 
   return (
     <>

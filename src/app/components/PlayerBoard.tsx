@@ -9,16 +9,10 @@ import {
 } from '@waku/react';
 
 import protobuf from 'protobufjs';
-import WakuService, { MESSAGE_RECEIVED } from "../WakuService";
+import { Message, Player } from "../types";
+import { removeDuplicatesByKey } from "../utils";
+import { BOARD_SIZE, createBoard, Ship } from "../utils/gameUtils";
 
-
-type Ship = {
-    id: number;
-    size: number;
-    orientation: string;
-    placed: boolean
-}
-const BOARD_SIZE = 10;
 const SHIPS: Ship[] = [
   { id: 1, size: 3, orientation: "horizontal", placed: false },
   { id: 2, size: 3, orientation: "horizontal", placed: false },
@@ -27,27 +21,48 @@ const SHIPS: Ship[] = [
   { id: 5, size: 2, orientation: "vertical", placed: false },
 ];
 
-let pollingInterval: any;
-let POLLING_TIME = 1000;
-let READY_TO_PLAY_TOPIC = 'waku/battleship/ready'
-
 
 const ChatMessage = new protobuf.Type('ChatMessage')
   .add(new protobuf.Field('timestamp', 1, 'uint64'))
   .add(new protobuf.Field('sender', 2, 'string'))
-  .add(new protobuf.Field('message', 3, 'string'));
+  .add(new protobuf.Field('message', 3, 'string'))
+  .add(new protobuf.Field('id', 4, 'string'));
 
-const createBoard = () =>
-  Array.from({ length: BOARD_SIZE }, () => Array(BOARD_SIZE).fill(0)); // Fill with 0 for empty cells
 
-function PlayerBoard(props: {roomId: number}) {
+function PlayerBoard(props: {roomId: number, messages: Message[], setMessages: any, player: Player}) {
+
+
+  // waku dependencies
+  const { node, isLoading, error } = useWaku();
+  
+  const { decoder, encoder } = useContentPair();
+
+  
+  const { messages: filterMessages } = useFilterMessages({ node, decoder });
+  const {messages: storeMessages} = useStoreMessages({node, decoder});
+  // end waku dependencies
+
+
+  useEffect(() => {
+
+    if (props.player === Player.p2 && !isLoading) {
+      // send a message indicating that the second player has joined
+      // first player created the room, so they can be assumed joined
+
+      sendMessage(props.player, 'joined');
+    }
+
+  }, [props.player, isLoading])
 
   function decodeMessage(wakuMessage: any) {
     if (!wakuMessage.payload) return;
 
-    const { timestamp, sender, message } = ChatMessage.decode(wakuMessage.payload);
+    const { timestamp, sender, message, id } = ChatMessage.decode(wakuMessage.payload);
 
-    if (!timestamp || !sender || !message) return;
+    if (!timestamp || !sender || !message) {
+      console.error({timestamp, sender, message, id}, 'missing props');
+      
+    };
 
     const time = new Date();
     time.setTime(Number(timestamp));
@@ -57,90 +72,68 @@ function PlayerBoard(props: {roomId: number}) {
       timestamp: time,
       sender,
       timestampInt: wakuMessage.timestamp,
+      id
     };
   }
 
-  const roomId: number = props.roomId;
-
-  // waku dependencies
-  const { node } = useWaku();
-  console.log({node})
-  const { decoder, encoder } = useContentPair();
-
-  const { messages: storeMessages } = useStoreMessages({
-    node,
-    decoder,
-  });
-  const { messages: filterMessages } = useFilterMessages({ node, decoder });
-
+  
   useEffect(() => {
 
-    console.log({storeMessages}, storeMessages.map(decodeMessage));
-    console.log({filterMessages}, filterMessages.map(decodeMessage))
+    console.log({filterMessages, storeMessages})
+    const filteredMessagesDecoded = filterMessages.map(decodeMessage);
 
-  }, [storeMessages, filterMessages])
+    const updatedMessages = [...props.messages, ...filteredMessagesDecoded] as Message[];
+    
+    const filteredUpdatedMessages = removeDuplicatesByKey(updatedMessages, 'id');
+    console.log({filteredUpdatedMessages, updatedMessages});
+    props.setMessages(filteredUpdatedMessages);
+
+  }, [filterMessages, storeMessages])
 
   
 
   const { push } = useLightPush({ node, encoder });
 
-  // end waku dependencies
-  const [nodeStart, setNodeStart] = useState(false);
-
   async function sendMessage(sender: any, message: any) {
+
     const protoMessage = ChatMessage.create({
       timestamp: Date.now(),
       sender,
       message,
+      id: crypto.randomUUID()
     });
 
     const serialisedMessage = ChatMessage.encode(protoMessage).finish();
 
     const timestamp = new Date();
-    await push({
-      payload: serialisedMessage,
-      timestamp: timestamp,
-    });
 
-    console.log('MESSAGE PUSHED');
+    if (push) {
+      const res = await push({
+        payload: serialisedMessage,
+        timestamp: timestamp,
+      });
+  
+      console.log('MESSAGE PUSHED', res);
+      if (res?.errors?.length && res?.errors?.length > 0) {
+        alert('unable to connect to a stable node. please reload')
+
+      }
+    }
+    
   }
 
   const [board, setBoard] = useState(createBoard());
   const [selectedShip, setSelectedShip] = useState<Ship | null>(null);
   const [ships, setShips] = useState<Ship[]>(SHIPS);
-  const [username, setUsername] = useState<string>('');
-  const [wakuInstance, setWakuInstance] = useState<WakuService>();
 
-  if (wakuInstance) {
-    wakuInstance.on(MESSAGE_RECEIVED, event => {
-      console.log('message: ', event);
-    })
-  }
-
-  const fetchPlayers = async () => {
-    const _wakuInstance = new WakuService(READY_TO_PLAY_TOPIC);
-    await _wakuInstance.init();
-    await _wakuInstance.startWatchingForNewMessages();
-    setWakuInstance(_wakuInstance); 
-  }
-
+  
+  
   const sendReadyMessage = () => {
-    sendMessage(username, 'waku hook test 1');
-    // wakuInstance?.pushMessage(username, 'ready');
-  }
-
-  console.log('wakuInstance?.node: ', wakuInstance?.node)
-  useEffect(() => {
-    // fetchPlayers();
-  }, []);
-
-  const stopPollingForPlayers = () => {
-
+    sendMessage(props.player, 'ready');
   }
 
   const handleReset = () => {
 
-    stopPollingForPlayers();
     setShips(SHIPS);
     setSelectedShip(null);
     setBoard(createBoard());
@@ -223,12 +216,16 @@ function PlayerBoard(props: {roomId: number}) {
     }
   };
 
-  console.log(board);
+  if(isLoading) {
+    return <div>loading...</div>
+  }
+
+  if (error) {
+    return <div>error</div>
+  }
   return (
     <div>
-      <div>
-        <input type="text" value={username} onChange={e => setUsername(e.target.value)} />
-      </div>
+      
       <button onClick={handleReset}>reset</button>
       <div className="ship-selection">
         {ships
@@ -255,10 +252,8 @@ function PlayerBoard(props: {roomId: number}) {
           </div>
         ))}
       </div>
-      <button onClick={sendReadyMessage}>Ready to play</button>
-      {
-          wakuInstance?.node && <button onClick={sendReadyMessage}>Ready to play</button>
-      }
+      <button disabled={!areAllShipsPlaced()} onClick={sendReadyMessage}>Ready to play</button>
+      
     </div>
   );
 }

@@ -83,7 +83,8 @@ import {
         // Wait for peer connections with specific protocols
         await waitForRemotePeer(this.node, [
             Protocols.LightPush,
-            Protocols.Filter
+            Protocols.Filter,
+            Protocols.Store
         ]);
 
         console.log("Node Acquired Successfully");
