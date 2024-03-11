@@ -11,6 +11,7 @@ import {
 import { Message, Player } from "../types";
 import { decodeMessage, findLatestMessage, removeDuplicatesByKey } from "../utils";
 import { BOARD_SIZE, ChatMessage, createBoard, MoveMessage, MoveReplyMessage, Ship, SHIPS } from "../utils/gameUtils";
+import Spinner from "./Spinner";
 
 function PlayerBoard(props: { 
   filterMessages: any,
@@ -260,25 +261,31 @@ function PlayerBoard(props: {
   };
 
   if(isLoading) {
-    return <div>loading...</div>
+    return <Spinner />
   }
 
   if (error) {
     return <div>error</div>
   }
   return (
-    <div>
+    <div className="grid grid-cols-2 gap-4">
       
-      <button onClick={handleReset}>reset</button>
-      <div className="ship-selection">
+      
+      <div className="flex flex-col items-center space-y-2 mt-4">
+
         {ships
           .filter((ship) => !ship.placed)
           .map((ship) => (
-            <button key={ship.id} onClick={() => handleShipSelection(ship)}>
+            <button 
+              key={ship.id} 
+              onClick={() => handleShipSelection(ship)}
+              className="px-4 py-2 bg-blue-500 text-white font-bold rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
+              >
               Ship {ship.id} (Size: {ship.size}, {ship.orientation})
             </button>
           ))}
       </div>
+      <div className="flex flex-col items-center space-y-2 mt-4">
       <div className="board">
         {board.map((row, rowIndex) => (
           <div key={rowIndex} className="row">
@@ -298,8 +305,30 @@ function PlayerBoard(props: {
             ))}
           </div>
         ))}
+
+
+      <div className="flex justify-between items-center w-full py-4">
+
+<button 
+  onClick={handleReset}
+  className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white font-bold rounded focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50"
+
+  >
+    
+  reset
+  </button>
+<button 
+  
+  onClick={sendReadyMessage}
+  className={`px-6 py-2 font-bold text-lg rounded transition-colors duration-150 ${
+    areAllShipsPlaced() ? 'bg-green-500 text-white hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50' : 'bg-gray-500 text-gray-200 cursor-not-allowed'}`}
+>
+  Ready to play
+  </button>
+</div>
       </div>
-      <button disabled={!areAllShipsPlaced()} onClick={sendReadyMessage}>Ready to play</button>
+      </div>
+
       
     </div>
   );

@@ -17,27 +17,47 @@ const Page = () => {
     const router = useRouter();
 
     return(
-        <div>
-            <div>
-            <input placeholder="enter username" type="text" value={username} onChange={e => setUsername(e?.target?.value)} />
-            </div>
-        <div>
-            
-            <button disabled={!Boolean(username)} onClick={() => {router.push(`/room/${generateThreeDigitNumber()}?username=${username}`)}}>
-                create a new room
-            </button>
+        <div className="flex flex-col items-center justify-center min-h-screen space-y-4">
+  <div className="flex flex-col items-center">
+    <input
+      className="px-4 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+      placeholder="Enter username"
+      type="text"
+      value={username}
+      onChange={e => setUsername(e?.target?.value)}
+    />
+  </div>
 
-            
-        </div>
+  <div>
+    <button
+      className={`px-4 py-2 rounded-md text-white font-bold ${!Boolean(username) ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-700'}`}
+      disabled={!Boolean(username)}
+      onClick={() => {router.push(`/room/${generateThreeDigitNumber()}?username=${username}`)}}>
+      Create a new room
+    </button>
+  </div>
 
-        <div>
-            <input type="string" value={room} onChange={e => setRoom(e?.target?.value)} />
+  <div className="text-center text-gray-500 my-2">
+    OR
+  </div>
 
-            <button disabled={!Boolean(room) || !Boolean(username)} onClick={() => {router.push(`/join/${generateThreeDigitNumber()}?username=${username}`)}}>
-                join this room
-            </button>
-        </div>
-        </div>
+  <div className="flex flex-col items-center">
+    <input
+      className="px-4 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+      type="text"
+      value={room}
+      onChange={e => setRoom(e?.target?.value)}
+    />
+
+    <button
+      className={`mt-2 px-4 py-2 rounded-md text-white font-bold ${!Boolean(room) || !Boolean(username) ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-500 hover:bg-green-700'}`}
+      disabled={!Boolean(room) || !Boolean(username)}
+      onClick={() => {router.push(`/join/${generateThreeDigitNumber()}?username=${username}`)}}>
+      Join this room
+    </button>
+  </div>
+</div>
+
         
     )
 };

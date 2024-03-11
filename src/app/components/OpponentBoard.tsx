@@ -113,6 +113,8 @@ const OpponentBoard = (props: {
     // }
 
     return (
+      <div className="grid grid-cols-2 gap-4">
+        <div></div>
         <div className="board">
             {board.map((row, rowIndex) => (
           <div key={rowIndex} className="row">
@@ -124,12 +126,18 @@ const OpponentBoard = (props: {
                   sendMoveMesasge(rowIndex, colIndex)
                 }}
               >
-                  {Boolean(cell) && cell}
+                  {cell === 'hit' && (
+    <span role="img" aria-label="hit">🎯</span> // Replace with your hit icon
+  )}
+  {cell === 'miss' && (
+    <span role="img" aria-label="miss">💦</span> // Replace with your miss icon
+  )}
               </div>
             ))}
           </div>
         ))}
 
+        </div>
         </div>
     )
 

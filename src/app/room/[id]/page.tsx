@@ -20,11 +20,19 @@ const Page = () => {
     return (
         <ContentPairProvider contentTopic={`/waku-battlship/${roomId}`}>
 
-        <div>
-            this is a new room {searchParams.id} created by {username}
+        <div className="flex flex-col items-center justify-center min-h-screen space-y-4">
+        <div className="text-lg font-bold text-center">
+            Welcome to room: <span className="text-blue-500">{searchParams.id}</span> created by <span className="text-green-500">{username}</span>
+        </div>
+
+        <div className="text-md text-gray-700 text-center">
+            Share this room ID with your friend to start playing now
         </div>
 
         <Container player={Player.p1} messages={messages} setMessages={setMessages} />
+        </div>
+
+     
         </ContentPairProvider>
     )
 }

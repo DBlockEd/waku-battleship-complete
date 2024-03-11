@@ -14,12 +14,15 @@ const Page = () => {
 
     return (
         <ContentPairProvider contentTopic={`/waku-battlship/${roomId}`}>
-            <div>
-                Welcome, {username}
-                you have joined the room {roomId}
+            <div className="flex flex-col items-center justify-center min-h-screen space-y-4">
+            <div className="text-lg font-bold text-center">
+                Welcome, <span className="text-green-500">{username}</span> <br />
+                you have joined the room <span className="text-blue-500"> {roomId} </span>
             </div>
 
             <Container player={Player.p2} messages={messages} setMessages={setMessages} />
+
+            </div>
         </ContentPairProvider>
     )
 };
