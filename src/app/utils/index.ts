@@ -22,9 +22,6 @@ export function removeDuplicatesByKey<T extends AnyObject>(array: T[], key: keyo
         console.log('error in decoding: ', 'nothing found');
         return;
     };
-    
-
-    // let timestamp, sender, message, id, move, hit;
 
     try {
         const { timestamp, sender, message, id } = ChatMessage.decode(wakuMessage.payload);
@@ -40,7 +37,6 @@ export function removeDuplicatesByKey<T extends AnyObject>(array: T[], key: keyo
             id
           };
     } catch (e) {
-
 
         try {
             const { timestamp, sender, move, id } = MoveMessage.decode(wakuMessage.payload);  
@@ -72,46 +68,6 @@ export function removeDuplicatesByKey<T extends AnyObject>(array: T[], key: keyo
             
         }
     }
-    
-
-    // if (!message) {
-
-        
-    //   // check if this is a move message / hit message
-    //    ({ timestamp, sender, move, id } = MoveMessage.decode(wakuMessage.payload));  
-
-    //   if (move) {
-
-    //     console.log('decoding message: ', {move,
-    //         sender,
-    //         timestamp,
-    //         id});
-    //     // respondToMove(move);
-    //     return {
-    //       move,
-    //       sender,
-    //       timestamp,
-    //       id
-    //     };
-
-    //   }
-      
-    //   ({ timestamp, sender, hit, id } = MoveReplyMessage.decode(wakuMessage.payload));  
-    //   return {
-    //     hit,
-    //     sender,
-    //     timestamp,
-    //     id
-    //   };
-
-    // }
-
-    // return {
-    //   message,
-    //   timestamp,
-    //   sender,
-    //   id
-    // };
   }
 
   export function findLatestMessage(messages: Message[]): Message | undefined {

@@ -1,11 +1,8 @@
 "use client"
 import React, { useEffect, useState } from "react";
 import {
-  useWaku,
-  useContentPair,
   useLightPush,
-  useStoreMessages,
-  useFilterMessages,
+  
 } from '@waku/react';
 
 import { Message, Player } from "../types";
@@ -160,7 +157,6 @@ function PlayerBoard(props: {
 
       if (res?.errors?.length && res?.errors?.length > 0) {
         alert('unable to connect to a stable node. please reload')
-
       }
     }
     
@@ -335,8 +331,3 @@ function PlayerBoard(props: {
 }
 
 export default PlayerBoard;
-
-// TODO:
-// 1. create link to join room
-// 2. generate random username
-// 3. when someone joins a room - what happens?

@@ -1,4 +1,4 @@
-import { useContentPair, useFilterMessages, useLightPush, useWaku } from "@waku/react";
+import { useLightPush } from "@waku/react";
 import React, { useEffect, useState } from "react";
 import { Message, Player } from "../types";
 import { decodeMessage, findLatestMessage, removeDuplicatesByKey } from "../utils";
@@ -98,19 +98,6 @@ const OpponentBoard = (props: {
           }
     }
 
-    // if (isLoading) {
-    //     return <div>
-    //         loading opponent board
-    //     </div>
-    // }
-
-    // if (error) {
-    //     return (
-    //         <div>
-    //             error loading opponent board
-    //         </div>
-    //     )
-    // }
 
     return (
       <div className="grid grid-cols-2 gap-4">
